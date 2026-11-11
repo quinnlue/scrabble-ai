@@ -1,5 +1,4 @@
 import random
-import tkinter as tk
 
 
 class Scrabble:
@@ -216,6 +215,8 @@ class Scrabble:
 
     def display_board(self):
         """Displays the board using tkinter"""
+
+        import tkinter as tk
 
         root = tk.Tk()
 

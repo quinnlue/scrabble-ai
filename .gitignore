@@ -1,0 +1,11 @@
+*.pkl
+*.pickle
+
+__pycache__/
+*.py[co]
+.venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+/scrabble.ipynb
+/tmp.ipynb

@@ -1,19 +1,26 @@
 import heapq
+from functools import cache
+
 from gaddag import Gaddag, Node
 from scrabble import Scrabble
 
 
+@cache
+def _default_gaddag():
+    return Gaddag()
+
+
 class Solver:
-    def __init__(self, gaddag: Gaddag=Gaddag(), game=Scrabble()):
+    def __init__(self, gaddag: Gaddag = None, game=Scrabble()):
         """Move Generator for scrabble
 
         Args:
-            gaddag Gaddag: gaddag data structure of the dictionary you're using
+            gaddag Gaddag: GADDAG for the dictionary, or None for the full dictionary
                 - SEE http://blog.wouterkoolen.info/Gaddag/post.html
         """
 
-        self.gaddag = gaddag
-        self.root = gaddag.root
+        self.gaddag = _default_gaddag() if gaddag is None else gaddag
+        self.root = self.gaddag.root
 
         # Game state
         self.game = game

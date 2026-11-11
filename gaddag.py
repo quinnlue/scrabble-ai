@@ -4,16 +4,46 @@ import os
 
 
 class Node:
+    __slots__ = ("children", "value", "is_word")
+
     def __init__(self, letter=None):
         self.children = {}
         self.value = letter
         self.is_word = False
 
+    def __getstate__(self):
+        return self.children, self.value, self.is_word
+
+    def __setstate__(self, state):
+        if isinstance(state, dict):
+            # Older caches stored each node's instance dictionary.
+            self.children = state["children"]
+            self.value = state["value"]
+            self.is_word = state["is_word"]
+            if "$" in self.children:
+                self.children["$"] = _WORD_END
+        else:
+            self.children, self.value, self.is_word = state
+
+
+class _WordEnd(Node):
+    __slots__ = ()
+
+    def __reduce__(self):
+        return "_WORD_END"
+
+
+_WORD_END = _WordEnd("$")
+
 
 class Gaddag:
-    def __init__(self, dictionary_file="dictionary.txt", gaddag_file="gaddag.pkl"):
+    def __init__(
+        self, dictionary_file="dictionary.txt", gaddag_file="gaddag.pkl", *,
+        max_word_length=None,
+    ):
         self.dictionary_file = dictionary_file
         self.gaddag_file = gaddag_file
+        self.max_word_length = max_word_length
         self.root = Node()
 
         if os.path.exists(gaddag_file):
@@ -24,6 +54,8 @@ class Gaddag:
     def build_and_save_gaddag(self):
         with open(self.dictionary_file, "r") as file:
             for word in file.read().splitlines():
+                if self.max_word_length is not None and len(word) > self.max_word_length:
+                    continue
                 word = word[::-1] + "#"
                 for i in range(len(word) - 1):
                     self.add_to_graph(word[i:] + word[:i][::-1])
@@ -36,7 +68,7 @@ class Gaddag:
                 node.children[letter] = Node(letter)
             node = node.children[letter]
         node.is_word = True
-        node.children["$"] = Node("$")
+        node.children["$"] = _WORD_END
 
     def is_valid_word(self, word):
         word = (word[::-1] + "#").upper()
@@ -65,6 +97,7 @@ class Gaddag:
 
 
 if __name__ == "__main__":
-    # Create or load the GADDAG
-    gaddag = Gaddag(dictionary_file="dictionary2.txt", gaddag_file="gaddag.pkl")
-    print("GADDAG has been built and saved!")
+    # Use the importable module name in the cache.
+    from gaddag import Gaddag
+
+    Gaddag()

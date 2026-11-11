@@ -101,14 +101,15 @@ class GameNode:
 
 
 class ScrabbleAI:
-    def __init__(self, game: Scrabble = Scrabble()):
+    def __init__(self, game: Scrabble = Scrabble(), *, gaddag=None):
         """Scrabble AI solver using Monte Carlo Tree Search
 
         Args:
             game (Scrabble, optional): Scrabble game object. Defaults to Scrabble().
+            gaddag (Gaddag, optional): GADDAG to use for move generation.
         """
         self.game = game
-        self.solver = Solver(game=game)
+        self.solver = Solver(game=game, gaddag=gaddag)
 
         game_state = {
             "board": game.board,
