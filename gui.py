@@ -1,3 +1,4 @@
+import asyncio
 import time
 from dataclasses import dataclass, field
 from html import escape
@@ -84,6 +85,8 @@ class ScrabbleGUI:
 
         self.next_btn = w.Button(description="Next move", button_style="primary", icon="play")
         self.new_btn = w.Button(description="New game", icon="refresh")
+        self.auto = w.Checkbox(False, description="Auto-play to the end", indent=False)
+        self._auto_task = None
         self.status = w.HTML()
         self.board_html = w.HTML()
         self.info_html = w.HTML(layout=w.Layout(width="360px"))
@@ -93,6 +96,7 @@ class ScrabbleGUI:
         self.random_rack.observe(self._sync_settings, names="value")
         self.next_btn.on_click(self.next_move)
         self.new_btn.on_click(self.new_game)
+        self.auto.observe(self._on_auto, names="value")
 
         controls = w.VBox(
             [
@@ -103,6 +107,7 @@ class ScrabbleGUI:
                 self.ply_box,
                 self.random_rack,
                 w.HBox([self.next_btn, self.new_btn]),
+                self.auto,
                 self.status,
             ],
             layout=w.Layout(width="360px"),
@@ -151,8 +156,24 @@ class ScrabbleGUI:
         self.last_time = None
         self.history = []
 
+    def _on_auto(self, change):
+        if change["new"] and (self._auto_task is None or self._auto_task.done()):
+            self._auto_task = asyncio.ensure_future(self._auto_play())
+
+    async def _auto_play(self):
+        # Yield to the event loop between moves so widget changes (unticking
+        # the box, moving sliders) are picked up while the game runs.
+        while self.auto.value and not self.game_over:
+            try:
+                self.next_move()
+            except Exception:
+                break
+            await asyncio.sleep(0.3)
+        self.auto.value = False
+
     def new_game(self, _=None):
-        self.game = Scrabble(num_players=self.game.num_players, num_letters=self.game.num_letters)
+        self.auto.value = False
+        self.game =Scrabble(num_players=self.game.num_players, num_letters=self.game.num_letters)
         self.ai = ScrabbleAI(self.game, gaddag=self.ai.solver.gaddag)
         self._reset_game_state()
         self.status.value = ""
